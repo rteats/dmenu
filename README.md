@@ -1,5 +1,5 @@
-Similar to [dwm-flexipatch](https://github.com/bakkeby/dwm-flexipatch) this dmenu 5.1 (28fb3e2,
-2022-05-01) project has a different take on patching. It uses preprocessor directives to decide
+Similar to [dwm-flexipatch](https://github.com/bakkeby/dwm-flexipatch) this dmenu 5.2 (e42c036,
+2022-10-26) project has a different take on patching. It uses preprocessor directives to decide
 whether or not to include a patch during build time. Essentially this means that this build, for
 better or worse, contains both the patched _and_ the original code. The aim being that you can
 select which patches to include and the build will contain that code and nothing more.
@@ -27,6 +27,11 @@ Browsing patches? There is a [map of patches](https://coggle.it/diagram/YjT2DD6j
 ---
 
 ### Changelog:
+
+2022-09-05 - Removed the json patch due to maintenance and compatibility reasons, added the
+             separator patch
+
+2022-09-04 - Added the fzfexpect patch
 
 2022-06-21 - Adding barpadding patch and relative input width patch
 
@@ -102,6 +107,9 @@ Browsing patches? There is a [map of patches](https://coggle.it/diagram/YjT2DD6j
       - adds support for fuzzy-matching to dmenu, allowing users to type non-consecutive portions
         of the string to be matched
 
+   - [fzfexpect](https://github.com/DAFF0D11/dafmenu/blob/master/patches/dmenu-fzfexpect-5.1.diff)
+      - adds fzf expect functionality in dmenu
+
    - [grid](https://tools.suckless.org/dmenu/patches/grid/)
       - allows dmenu's entries to be rendered in a grid by adding a new `-g` flag to specify the
         number of grid columns
@@ -127,8 +135,8 @@ Browsing patches? There is a [map of patches](https://coggle.it/diagram/YjT2DD6j
       - adds a flag that will cause dmenu to select an item immediately if there is only one
         matching option left
 
-   - [json](https://tools.suckless.org/dmenu/patches/json/)
-      - adds basic support for json files
+   - [~json~](https://tools.suckless.org/dmenu/patches/json/)
+      - ~adds basic support for json files~
 
    - [line-height](http://tools.suckless.org/dmenu/patches/line-height/)
       - adds a `-h` option which sets the minimum height of a dmenu line
@@ -224,6 +232,10 @@ Browsing patches? There is a [map of patches](https://coggle.it/diagram/YjT2DD6j
    - [scroll](https://tools.suckless.org/dmenu/patches/scroll/)
       - this patch adds support for text scrolling
       - it doesn't append `...` for long input anymore as it can handle long text
+
+   - [separator](https://tools.suckless.org/dmenu/patches/separator/)
+      - adds `-d` and `-D` flags which separates the input into two halves; one half to be
+        displayed in dmenu and the other to be printed to stdout
 
    - [symbols](https://tools.suckless.org/dmenu/patches/symbols/)
       - allows the symbols, which are printed in dmenu to indicate that either the input is too
