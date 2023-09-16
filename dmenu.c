@@ -585,7 +585,11 @@ drawmenu(void)
 	curpos = TEXTW(text) - TEXTW(&text[cursor]);
 	if ((curpos += lrpad / 2 - 1) < w) {
 		drw_setscheme(drw, scheme[SchemeNorm]);
-		#if LINE_HEIGHT_PATCH
+		#if CARET_WIDTH_PATCH && LINE_HEIGHT_PATCH
+		drw_rect(drw, x + curpos, 2 + (bh-fh)/2, caret_width, fh - 4, 1, 0);
+		#elif CARET_WIDTH_PATCH
+		drw_rect(drw, x + curpos, 2, caret_width, bh - 4, 1, 0);
+		#elif LINE_HEIGHT_PATCH
 		drw_rect(drw, x + curpos, 2 + (bh-fh)/2, 2, fh - 4, 1, 0);
 		#else
 		drw_rect(drw, x + curpos, 2, 2, bh - 4, 1, 0);
@@ -687,7 +691,11 @@ drawmenu(void)
 	}
 	#if NUMBERS_PATCH
 	drw_setscheme(drw, scheme[SchemeNorm]);
+	#if PANGO_PATCH
+	drw_text(drw, mw - rpad, 0, TEXTW(numbers), bh, lrpad / 2, numbers, 0, False);
+	#else
 	drw_text(drw, mw - rpad, 0, TEXTW(numbers), bh, lrpad / 2, numbers, 0);
+	#endif // PANGO_PATCH
 	#endif // NUMBERS_PATCH
 	drw_map(drw, win, 0, 0, mw, mh);
 	#if NON_BLOCKING_STDIN_PATCH
@@ -1424,8 +1432,7 @@ readstdin(void)
 	char *buf, *p;
 	#endif // SEPARATOR_PATCH | TSV_PATCH
 
-	size_t size = 0;
-	size_t i, junk;
+	size_t i, linesiz, itemsiz = 0;
 	ssize_t len;
 
 	#if PASSWORD_PATCH
@@ -1436,14 +1443,17 @@ readstdin(void)
 	#endif // PASSWORD_PATCH
 
 	/* read each line from stdin and add it to the item list */
-	for (i = 0; (len = getline(&line, &junk, stdin)) != -1; i++, line = NULL) {
-		if (i + 1 >= size / sizeof *items)
-			if (!(items = realloc(items, (size += BUFSIZ))))
-				die("cannot realloc %zu bytes:", size);
+	for (i = 0; (len = getline(&line, &linesiz, stdin)) != -1; i++) {
+		if (i + 1 >= itemsiz) {
+			itemsiz += 256;
+			if (!(items = realloc(items, itemsiz * sizeof(*items))))
+				die("cannot realloc %zu bytes:", itemsiz * sizeof(*items));
+		}
 		if (line[len - 1] == '\n')
 			line[len - 1] = '\0';
 
-		items[i].text = line;
+		if (!(items[i].text = strdup(line)))
+			die("strdup:");
 		#if SEPARATOR_PATCH
 		if (separator && (p = separator_greedy ?
 			strrchr(items[i].text, separator) : strchr(items[i].text, separator))) {
@@ -1479,6 +1489,7 @@ readstdin(void)
 		items[i].hp = arrayhas(hpitems, hplength, items[i].text);
 		#endif // HIGHPRIORITY_PATCH
 	}
+	free(line);
 	if (items)
 		items[i].text = NULL;
 	lines = MIN(lines, i);
@@ -1734,7 +1745,7 @@ setup(void)
 		#endif // MOUSE_SUPPORT_PATCH
 	;
 	win = XCreateWindow(
-		dpy, parentwin,
+		dpy, root,
 		#if BARPADDING_PATCH && BORDER_PATCH
 		x + sp, y + vp - (topbar ? 0 : border_width * 2), mw - 2 * sp - border_width * 2, mh, border_width,
 		#elif BARPADDING_PATCH
@@ -1783,6 +1794,7 @@ setup(void)
 
 	XMapRaised(dpy, win);
 	if (embed) {
+		XReparentWindow(dpy, win, parentwin, x, y);
 		XSelectInput(dpy, parentwin, FocusChangeMask | SubstructureNotifyMask);
 		if (XQueryTree(dpy, parentwin, &dw, &w, &dws, &du) && dws) {
 			for (i = 0; i < du && dws[i] != win; ++i)
@@ -1838,6 +1850,9 @@ usage(void)
 		"1"
 		#endif // RESTRICT_RETURN_PATCH
 		"] "
+		#if CARET_WIDTH_PATCH
+		"[-cw caret_width] "
+		#endif // CARET_WIDTH_PATCH
 		#if MANAGED_PATCH
 		"[-wm] "
 		#endif // MANAGED_PATCH
@@ -1914,6 +1929,15 @@ main(int argc, char *argv[])
 		    parentwin);
 
 	#if ALPHA_PATCH
+	/* These need to be checked before we init the visuals. */
+	for (i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "-o")) {  /* opacity, pass -o 0 to disable alpha */
+			opacity = atoi(argv[++i]);
+		} else {
+			continue;
+		}
+		argv[i][0] = '\0'; // mark as used
+	}
 	xinitvisual();
 	drw = drw_create(dpy, screen, root, wa.width, wa.height, visual, depth, cmap);
 	#else
@@ -1922,7 +1946,10 @@ main(int argc, char *argv[])
 	readxresources();
 	#endif // XRESOURCES_PATCH
 
-	for (i = 1; i < argc; i++)
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] == '\0')
+			continue;
+
 		/* these options take no arguments */
 		if (!strcmp(argv[i], "-v")) {      /* prints version information */
 			puts("dmenu-"VERSION);
@@ -2064,6 +2091,10 @@ main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "-shf")) /* selected hi foreground color */
 			colors[SchemeSelHighlight][ColFg] = argv[++i];
 		#endif // HIGHLIGHT_PATCH | FUZZYHIGHLIGHT_PATCH
+		#if CARET_WIDTH_PATCH
+		else if (!strcmp(argv[i], "-cw"))  /* sets caret witdth */
+			caret_width = atoi(argv[++i]);
+		#endif // CARET_WIDTH_PATCH
 		else if (!strcmp(argv[i], "-w"))   /* embedding window id */
 			embed = argv[++i];
 		#if SEPARATOR_PATCH
@@ -2091,8 +2122,10 @@ main(int argc, char *argv[])
 			insert(text, strlen(text));
 		}
 		#endif // INITIALTEXT_PATCH
-		else
+		else {
 			usage();
+		}
+	}
 
 	#if XRESOURCES_PATCH
 	#if PANGO_PATCH

@@ -1,5 +1,5 @@
-Similar to [dwm-flexipatch](https://github.com/bakkeby/dwm-flexipatch) this dmenu 5.2 (e42c036,
-2022-10-26) project has a different take on patching. It uses preprocessor directives to decide
+Similar to [dwm-flexipatch](https://github.com/bakkeby/dwm-flexipatch) this dmenu 5.2 (0fe460d,
+2023-04-05) project has a different take on patching. It uses preprocessor directives to decide
 whether or not to include a patch during build time. Essentially this means that this build, for
 better or worse, contains both the patched _and_ the original code. The aim being that you can
 select which patches to include and the build will contain that code and nothing more.
@@ -27,6 +27,8 @@ Browsing patches? There is a [map of patches](https://coggle.it/diagram/YjT2DD6j
 ---
 
 ### Changelog:
+
+2023-06-15 - Added the caret width patch
 
 2022-09-05 - Removed the json patch due to maintenance and compatibility reasons, added the
              separator patch
@@ -77,6 +79,9 @@ Browsing patches? There is a [map of patches](https://coggle.it/diagram/YjT2DD6j
 
    - [border](http://tools.suckless.org/dmenu/patches/border/)
       - adds a border around the dmenu window
+
+   - [caret-width](https://github.com/DarkSamus669/dmenu-patches/blob/main/dmenu-caretwidth-5.2.diff)
+      - makes the caret width configurable and overridable via a command line option
 
    - [case-insensitive](http://tools.suckless.org/dmenu/patches/case-insensitive/)
       - makes dmenu case-insensitive by default, replacing the case-insensitive `-i` option with a
